@@ -14,7 +14,7 @@ proyek-analisis-data/
 ├── requirements.txt
 └── url.txt
 
-## 🛠️ Cara Menjalankan Dependensi
-Jalankan perintah berikut di terminal/CMD untuk menginstal library yang dibutuhkan:
+## 🛠️ Setup Environment
+Pastikan kamu sudah menginstal pustaka Python yang dibutuhkan dengan menjalankan perintah berikut di terminal/CMD:
 ```bash
 pip install -r requirements.txt
