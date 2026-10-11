@@ -2,10 +2,9 @@
 
 Proyek ini merupakan submission akhir untuk kelas Belajar Analisis Data dengan Python di Dicoding. Proyek ini bertujuan untuk melakukan analisis eksplorasi data (EDA) pada dataset e-commerce Olist guna memperoleh insight bisnis terkait performa produk, kepuasan pelanggan, serta segmentasi pelanggan.
 
-## Setup Environment - Anaconda
+## Setup Environment
+Buka terminal atau command prompt di komputer kamu, lalu jalankan perintah berikut untuk menginstal library yang dibutuhkan:
 ```bash
-conda create --name main-ds python=3.9
-conda activate main-ds
 pip install -r requirements.txt
 
 ## Setup Environment - Shell/Terminal 
