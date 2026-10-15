@@ -2,12 +2,15 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
+import os
 
 # Set style seaborn
 sns.set(style="dark")
 
-# Load data utama (pastikan nama file CSV sesuai dengan yang ada di folder dashboard)
-all_df = pd.read_csv("main_data.csv")
+# Load data utama dengan path aman untuk Streamlit Cloud
+base_dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(base_dir, "main_data.csv")
+all_df = pd.read_csv(csv_path)
 
 st.title("Proyek Analisis Data: Olist E-Commerce 🛒")
 
