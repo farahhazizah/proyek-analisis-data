@@ -1,75 +1,95 @@
-import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import os
+import streamlit as st
 
-# Konfigurasi Halaman Dashboard
-st.set_page_config(page_title="Olist E-Commerce Dashboard", page_icon="📊", layout="wide")
+# Set style seaborn
+sns.set(style="dark")
 
-# Title & Header
-st.title("📊 Proyek Analisis Data: Olist E-Commerce")
-st.markdown("---")
+# Load data utama (pastikan nama file CSV sesuai dengan yang ada di folder dashboard)
+all_df = pd.read_csv("main_data.csv")
 
-# Load Dataset
-@st.cache_data
-def load_data():
-    if os.path.exists("main_data.csv"):
-        return pd.read_csv("main_data.csv")
-    elif os.path.exists("dashboard/main_data.csv"):
-        return pd.read_csv("dashboard/main_data.csv")
-    else:
-        return pd.read_csv("../dashboard/main_data.csv")
+st.title("Proyek Analisis Data: Olist E-Commerce 🛒")
 
-df = load_data()
+# --- (Opsional) Visualisasi Pertanyaan 1 kamu bisa ditaruh di sini jika ada ---
 
-# Sidebar
-st.sidebar.header("🔍 Informasi Proyek")
-st.sidebar.markdown("**Nama:** Farah Azizah")
-st.sidebar.markdown("**Dataset:** Olist E-Commerce")
 
-# Filter Sederhana di Sidebar
-categories = df['product_category_name'].dropna().unique().tolist()
-selected_categories = st.sidebar.multiselect(
-    "Filter Kategori Produk:",
-    options=categories,
-    default=categories[:10] if len(categories) >= 10 else categories
-)
+# --- VISUALISASI PERTANYAAN 2: SEGMENTASI RFM & KONTRIBUSI PENDAPATAN ---
+st.subheader("Analisis Segmentasi Pelanggan (RFM) & Kontribusi Pendapatan")
 
-filtered_df = df[df['product_category_name'].isin(selected_categories)] if selected_categories else df
+# Konversi tanggal
+all_df['order_purchase_timestamp'] = pd.to_datetime(all_df['order_purchase_timestamp'])
+recent_date = all_df['order_purchase_timestamp'].max()
 
-# Section 1: Performa Kategori Produk (Top & Bottom)
-st.subheader("🏆 Performa Kategori Produk Berdasarkan Pendapatan")
-
-category_perf = filtered_df.groupby('product_category_name').agg({
-    'price': 'sum',
-    'order_id': 'count'
+# Hitung RFM
+rfm_df = all_df.groupby('customer_id').agg({
+    'order_purchase_timestamp': lambda x: (recent_date - x.max()).days,
+    'order_id': 'nunique',
+    'payment_value': 'sum'
 }).reset_index()
-category_perf.columns = ['product_category_name', 'total_revenue', 'total_orders']
 
+rfm_df.columns = ['customer_id', 'recency', 'frequency', 'monetary']
+
+# Skor RFM
+rfm_df['r_score'] = pd.qcut(rfm_df['recency'], 5, labels=[5, 4, 3, 2, 1], duplicates='drop')
+rfm_df['f_score'] = pd.qcut(rfm_df['frequency'].rank(method='first'), 5, labels=[1, 2, 3, 4, 5])
+rfm_df['m_score'] = pd.qcut(rfm_df['monetary'].rank(method='first'), 5, labels=[1, 2, 3, 4, 5])
+
+def customer_segment(row):
+    if row['r_score'] >= 4 and row['f_score'] >= 4 and row['m_score'] >= 4:
+        return 'Best Customers'
+    elif row['f_score'] >= 3:
+        return 'Loyal Customers'
+    elif row['r_score'] <= 2:
+        return 'At Risk Customers'
+    else:
+        return 'Potential Loyalist'
+
+rfm_df['segment'] = rfm_df.apply(customer_segment, axis=1)
+
+# Kontribusi Pendapatan 2018
+df_2018 = all_df[all_df['order_purchase_timestamp'].dt.year == 2018]
+trans_segment_2018 = pd.merge(df_2018, rfm_df[['customer_id', 'segment']], on='customer_id', how='inner')
+
+total_revenue_2018 = trans_segment_2018['payment_value'].sum()
+revenue_by_segment_2018 = trans_segment_2018.groupby('segment')['payment_value'].sum().reset_index()
+revenue_by_segment_2018['percentage'] = (revenue_by_segment_2018['payment_value'] / total_revenue_2018) * 100
+
+# Menampilkan grafik menggunakan 2 kolom di Streamlit
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("##### Top 5 Kategori (Pendapatan Tertinggi)")
-    top_5 = category_perf.sort_values(by='total_revenue', ascending=False).head(5)
-    
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    colors = ["#1f77b4" if i == 0 else "#d3d3d3" for i in range(len(top_5))]
-    sns.barplot(x='total_revenue', y='product_category_name', data=top_5, palette=colors, ax=ax)
-    ax.set_xlabel("Total Revenue (R$)")
-    ax.set_ylabel(None)
+    fig, ax = plt.subplots(figsize=(8, 5))
+    seg_counts = rfm_df['segment'].value_counts().reset_index()
+    seg_counts.columns = ['segment', 'count']
+    sns.barplot(
+        x='segment', 
+        y='count', 
+        data=seg_counts, 
+        ax=ax, 
+        palette='Blues_r',
+        hue='segment',
+        legend=False
+    )
+    ax.set_title("Jumlah Pelanggan per Segmen", fontsize=12, fontweight='bold')
+    ax.set_xlabel("Segmen Pelanggan", fontsize=10)
+    ax.set_ylabel("Jumlah Pelanggan", fontsize=10)
+    plt.xticks(rotation=15)
     st.pyplot(fig)
 
 with col2:
-    st.markdown("##### Bottom 5 Kategori (Pendapatan Terendah)")
-    bottom_5 = category_perf.sort_values(by='total_revenue', ascending=True).head(5)
-    
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    colors = ["#d62728" if i == 0 else "#d3d3d3" for i in range(len(bottom_5))]
-    sns.barplot(x='total_revenue', y='product_category_name', data=bottom_5, palette=colors, ax=ax)
-    ax.set_xlabel("Total Revenue (R$)")
-    ax.set_ylabel(None)
+    fig, ax = plt.subplots(figsize=(8, 5))
+    sns.barplot(
+        x='segment', 
+        y='percentage', 
+        data=revenue_by_segment_2018, 
+        ax=ax, 
+        palette='Greens_r',
+        hue='segment',
+        legend=False
+    )
+    ax.set_title("Kontribusi Pendapatan (2018) per Segmen (%)", fontsize=12, fontweight='bold')
+    ax.set_xlabel("Segmen Pelanggan", fontsize=10)
+    ax.set_ylabel("Persentase Pendapatan (%)", fontsize=10)
+    plt.xticks(rotation=15)
     st.pyplot(fig)
-
-st.markdown("---")
-st.caption("© 2026 - Olist E-Commerce Dashboard | Farah Azizah")
