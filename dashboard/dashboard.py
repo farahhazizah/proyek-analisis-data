@@ -7,15 +7,12 @@ import os
 # Set style seaborn
 sns.set(style="dark")
 
-# Load data utama dengan path aman untuk Streamlit Cloud
+# Load data utama menggunakan file .gz yang aman dari error ukuran file
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csv_path = os.path.join(base_dir, "main_data.csv")
+csv_path = os.path.join(base_dir, "main_data.csv.gz")
 all_df = pd.read_csv(csv_path)
 
 st.title("Proyek Analisis Data: Olist E-Commerce 🛒")
-
-# --- (Opsional) Visualisasi Pertanyaan 1 kamu bisa ditaruh di sini jika ada ---
-
 
 # --- VISUALISASI PERTANYAAN 2: SEGMENTASI RFM & KONTRIBUSI PENDAPATAN ---
 st.subheader("Analisis Segmentasi Pelanggan (RFM) & Kontribusi Pendapatan")
