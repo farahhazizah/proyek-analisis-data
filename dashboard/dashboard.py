@@ -41,47 +41,37 @@ st.markdown(f"Menampilkan data analisis untuk tahun: **{selected_year}**")
 st.markdown("---")
 
 # ==========================================
-# VISUALISASI PERTANYAAN 1: Kategori Produk Pendapatan Tertinggi & Terendah
+# VISUALISASI PERTANYAAN 1: Produk Pendapatan Tertinggi & Terendah
 # ==========================================
-st.subheader(f"🏆 Performa Kategori Produk (Pendapatan Tertinggi & Terendah) - {selected_year}")
+st.subheader(f"🏆 Performa Produk berdasarkan Pendapatan (Top & Bottom) - {selected_year}")
 
-# Deteksi otomatis nama kolom kategori yang ada di dataframe
-category_col = None
-for col in ['product_category_name_english', 'product_category_name', 'product_category_name_x', 'product_category_name_y']:
-    if col in filtered_df.columns:
-        category_col = col
-        break
-
-if category_col:
-    # Kelompokkan data berdasarkan kolom kategori yang ditemukan
-    category_revenue = filtered_df.groupby(category_col)['payment_value'].sum().reset_index()
-    category_revenue = category_revenue.sort_values(by='payment_value', ascending=False)
+if 'product_id' in filtered_df.columns and 'payment_value' in filtered_df.columns:
+    # Kelompokkan data berdasarkan product_id
+    product_revenue = filtered_df.groupby('product_id')['payment_value'].sum().reset_index()
+    product_revenue = product_revenue.sort_values(by='payment_value', ascending=False)
 
     # Ambil 5 teratas dan 5 terbawah
-    if len(category_revenue) >= 10:
-        top_bottom_categories = pd.concat([
-            category_revenue.head(5),
-            category_revenue.tail(5)
-        ]).drop_duplicates()
-    else:
-        top_bottom_categories = category_revenue
+    top_products = product_revenue.head(5)
+    bottom_products = product_revenue.tail(5)
+    top_bottom_products = pd.concat([top_products, bottom_products]).drop_duplicates()
 
-    fig_cat, ax_cat = plt.subplots(figsize=(12, 6))
+    # Potong string product_id agar tampilan di sumbu Y lebih rapi/pendek
+    top_bottom_products['short_product_id'] = top_bottom_products['product_id'].str[:8] + "..."
+
+    fig_cat, ax_cat = plt.subplots(figsize=(10, 5))
     sns.barplot(
         x='payment_value', 
-        y=category_col, 
-        data=top_bottom_categories, 
+        y='short_product_id', 
+        data=top_bottom_products, 
         palette='Blues_r', 
         ax=ax_cat,
-        hue=category_col,
+        hue='short_product_id',
         legend=False
     )
-    ax_cat.set_title(f"Kategori Produk dengan Total Pendapatan Tertinggi & Terendah ({selected_year})", fontsize=14, fontweight='bold')
-    ax_cat.set_xlabel("Total Pendapatan (Payment Value)", fontsize=11)
-    ax_cat.set_ylabel("Kategori Produk", fontsize=11)
+    ax_cat.set_title(f"Produk dengan Total Pendapatan Tertinggi & Terendah ({selected_year})", fontsize=12, fontweight='bold')
+    ax_cat.set_xlabel("Total Pendapatan (Payment Value)", fontsize=10)
+    ax_cat.set_ylabel("ID Produk", fontsize=10)
     st.pyplot(fig_cat)
-else:
-    st.warning("Kolom kategori produk tidak ditemukan. Pastikan nama kolom kategori sudah sesuai dengan yang ada di main_data.csv.gz.")
     
 # ==========================================
 # VISUALISASI PERTANYAAN 2: SEGMENTASI RFM & KONTRIBUSI PENDAPATAN
