@@ -14,6 +14,8 @@ sns.set(style="dark")
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(base_dir, "main_data.csv.gz")
 all_df = pd.read_csv(csv_path)
+# Tampilkan semua nama kolom di layar (sementara untuk dicek)
+st.write("Daftar kolom yang ada di dataset:", list(all_df.columns))
 
 # Konversi tanggal
 all_df['order_purchase_timestamp'] = pd.to_datetime(all_df['order_purchase_timestamp'])
