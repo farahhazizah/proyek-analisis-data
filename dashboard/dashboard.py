@@ -8,14 +8,12 @@ import os
 st.set_page_config(page_title="Dashboard Analisis Olist E-Commerce", layout="wide")
 
 # Set style seaborn
-sns.set(style="dark")
+sns.set(style="darkgrid")
 
 # Load data utama menggunakan file .gz yang aman dari error ukuran file
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(base_dir, "main_data.csv.gz")
 all_df = pd.read_csv(csv_path)
-# Tampilkan semua nama kolom di layar (sementara untuk dicek)
-st.write("Daftar kolom yang ada di dataset:", list(all_df.columns))
 
 # Konversi tanggal
 all_df['order_purchase_timestamp'] = pd.to_datetime(all_df['order_purchase_timestamp'])
@@ -25,7 +23,7 @@ all_df['order_purchase_timestamp'] = pd.to_datetime(all_df['order_purchase_times
 # ==========================================
 st.sidebar.header("🔍 Filter Dashboard")
 
-# 1. Filter Rentang Tahun (Menjawab kebutuhan interaktif reviewer)
+# Filter Rentang Tahun
 all_df['year'] = all_df['order_purchase_timestamp'].dt.year
 available_years = sorted(all_df['year'].dropna().unique())
 selected_year = st.sidebar.selectbox("Pilih Tahun Transaksi:", options=available_years, index=len(available_years)-1)
@@ -46,33 +44,30 @@ st.markdown("---")
 st.subheader(f"🏆 Performa Produk berdasarkan Pendapatan (Top & Bottom) - {selected_year}")
 
 if 'product_id' in filtered_df.columns and 'payment_value' in filtered_df.columns:
-    # Kelompokkan data berdasarkan product_id
     product_revenue = filtered_df.groupby('product_id')['payment_value'].sum().reset_index()
     product_revenue = product_revenue.sort_values(by='payment_value', ascending=False)
 
-    # Ambil 5 teratas dan 5 terbawah
     top_products = product_revenue.head(5)
     bottom_products = product_revenue.tail(5)
     top_bottom_products = pd.concat([top_products, bottom_products]).drop_duplicates()
 
-    # Potong string product_id agar tampilan di sumbu Y lebih rapi/pendek
     top_bottom_products['short_product_id'] = top_bottom_products['product_id'].str[:8] + "..."
 
-    fig_cat, ax_cat = plt.subplots(figsize=(10, 5))
+    fig_cat, ax_cat = plt.subplots(figsize=(12, 5))
     sns.barplot(
         x='payment_value', 
         y='short_product_id', 
         data=top_bottom_products, 
-        palette='Blues_r', 
-        ax=ax_cat,
-        hue='short_product_id',
-        legend=False
+        color='#1f77b4', 
+        ax=ax_cat
     )
     ax_cat.set_title(f"Produk dengan Total Pendapatan Tertinggi & Terendah ({selected_year})", fontsize=12, fontweight='bold')
     ax_cat.set_xlabel("Total Pendapatan (Payment Value)", fontsize=10)
     ax_cat.set_ylabel("ID Produk", fontsize=10)
     st.pyplot(fig_cat)
-    
+
+st.markdown("---")
+
 # ==========================================
 # VISUALISASI PERTANYAAN 2: SEGMENTASI RFM & KONTRIBUSI PENDAPATAN
 # ==========================================
@@ -80,7 +75,6 @@ st.subheader("👥 Analisis Segmentasi Pelanggan (RFM) & Kontribusi Pendapatan")
 
 recent_date = all_df['order_purchase_timestamp'].max()
 
-# Hitung RFM (berdasarkan keseluruhan data agar segmentasi pelanggan akurat)
 rfm_df = all_df.groupby('customer_id').agg({
     'order_purchase_timestamp': lambda x: (recent_date - x.max()).days,
     'order_id': 'nunique',
@@ -89,7 +83,6 @@ rfm_df = all_df.groupby('customer_id').agg({
 
 rfm_df.columns = ['customer_id', 'recency', 'frequency', 'monetary']
 
-# Skor RFM
 rfm_df['r_score'] = pd.qcut(rfm_df['recency'], 5, labels=[5, 4, 3, 2, 1], duplicates='drop')
 rfm_df['f_score'] = pd.qcut(rfm_df['frequency'].rank(method='first'), 5, labels=[1, 2, 3, 4, 5])
 rfm_df['m_score'] = pd.qcut(rfm_df['monetary'].rank(method='first'), 5, labels=[1, 2, 3, 4, 5])
@@ -106,7 +99,6 @@ def customer_segment(row):
 
 rfm_df['segment'] = rfm_df.apply(customer_segment, axis=1)
 
-# Gabungkan dengan data yang sudah difilter berdasarkan tahun pilihan di sidebar
 trans_segment_filtered = pd.merge(filtered_df, rfm_df[['customer_id', 'segment']], on='customer_id', how='inner')
 
 total_revenue_filtered = trans_segment_filtered['payment_value'].sum()
@@ -129,9 +121,7 @@ with col1:
         y='count', 
         data=seg_counts, 
         ax=ax, 
-        palette='Blues_r',
-        hue='segment',
-        legend=False
+        color='#2ca02c'
     )
     ax.set_title(f"Jumlah Transaksi Pelanggan per Segmen ({selected_year})", fontsize=11, fontweight='bold')
     ax.set_xlabel("Segmen Pelanggan", fontsize=10)
@@ -146,9 +136,7 @@ with col2:
         y='percentage', 
         data=revenue_by_segment, 
         ax=ax, 
-        palette='Greens_r',
-        hue='segment',
-        legend=False
+        color='#ff7f0e'
     )
     ax.set_title(f"Kontribusi Pendapatan ({selected_year}) per Segmen (%)", fontsize=11, fontweight='bold')
     ax.set_xlabel("Segmen Pelanggan", fontsize=10)
