@@ -12,7 +12,7 @@ sns.set(style="darkgrid")
 
 # Load data utama (Menggunakan main_data.csv sesuai struktur foldermu)
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csv_path = os.path.join(base_dir, "main_data.csv")
+csv_path = os.path.join(base_dir, "main_data.csv.gz")
 all_df = pd.read_csv(csv_path)
 
 # Konversi kolom tanggal ke datetime
