@@ -10,38 +10,50 @@ st.set_page_config(page_title="Dashboard Analisis Olist E-Commerce", layout="wid
 # Set style seaborn
 sns.set(style="darkgrid")
 
-# Load data utama menggunakan file .gz yang aman dari error ukuran file
+# Load data utama (Menggunakan main_data.csv sesuai struktur foldermu)
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csv_path = os.path.join(base_dir, "main_data.csv.gz")
+csv_path = os.path.join(base_dir, "main_data.csv")
 all_df = pd.read_csv(csv_path)
 
-# Konversi tanggal
+# Konversi kolom tanggal ke datetime
 all_df['order_purchase_timestamp'] = pd.to_datetime(all_df['order_purchase_timestamp'])
 
 # ==========================================
-# SIDEBAR: FILTER INTERAKTIF
+# SIDEBAR: FILTER INTERAKTIF (Berdasarkan Saran Reviewer)
 # ==========================================
 st.sidebar.header("🔍 Filter Dashboard")
 
-# Filter Rentang Tahun
-all_df['year'] = all_df['order_purchase_timestamp'].dt.year
-available_years = sorted(all_df['year'].dropna().unique())
-selected_year = st.sidebar.selectbox("Pilih Tahun Transaksi:", options=available_years, index=len(available_years)-1)
+# 1. Filter Rentang Tanggal (Date Input)
+min_date = all_df['order_purchase_timestamp'].min().date()
+max_date = all_df['order_purchase_timestamp'].max().date()
 
-# Terapkan filter tahun ke dataframe utama
-filtered_df = all_df[all_df['year'] == selected_year]
+try:
+    start_date, end_date = st.sidebar.date_input(
+        label='Rentang Waktu',
+        value=[min_date, max_date],
+        min_value=min_date,
+        max_value=max_date
+    )
+except:
+    start_date, end_date = min_date, max_date
+
+# Terapkan filter tanggal ke dataframe utama
+filtered_df = all_df[
+    (all_df['order_purchase_timestamp'].dt.date >= start_date) & 
+    (all_df['order_purchase_timestamp'].dt.date <= end_date)
+]
 
 # ==========================================
 # JUDUL UTAMA DASHBOARD
 # ==========================================
 st.title("Proyek Analisis Data: Olist E-Commerce 🛒")
-st.markdown(f"Menampilkan data analisis untuk tahun: **{selected_year}**")
+st.markdown(f"Menampilkan data dari tanggal: **{start_date}** sampai **{end_date}**")
 st.markdown("---")
 
 # ==========================================
 # VISUALISASI PERTANYAAN 1: Produk Pendapatan Tertinggi & Terendah
 # ==========================================
-st.subheader(f"🏆 Performa Produk berdasarkan Pendapatan (Top & Bottom) - {selected_year}")
+st.subheader("🏆 Performa Produk berdasarkan Pendapatan (Top & Bottom)")
 
 if 'product_id' in filtered_df.columns and 'payment_value' in filtered_df.columns:
     product_revenue = filtered_df.groupby('product_id')['payment_value'].sum().reset_index()
@@ -61,7 +73,7 @@ if 'product_id' in filtered_df.columns and 'payment_value' in filtered_df.column
         color='#1f77b4', 
         ax=ax_cat
     )
-    ax_cat.set_title(f"Produk dengan Total Pendapatan Tertinggi & Terendah ({selected_year})", fontsize=12, fontweight='bold')
+    ax_cat.set_title("Produk dengan Total Pendapatan Tertinggi & Terendah", fontsize=12, fontweight='bold')
     ax_cat.set_xlabel("Total Pendapatan (Payment Value)", fontsize=10)
     ax_cat.set_ylabel("ID Produk", fontsize=10)
     st.pyplot(fig_cat)
@@ -123,7 +135,7 @@ with col1:
         ax=ax, 
         color='#2ca02c'
     )
-    ax.set_title(f"Jumlah Transaksi Pelanggan per Segmen ({selected_year})", fontsize=11, fontweight='bold')
+    ax.set_title("Jumlah Transaksi Pelanggan per Segmen", fontsize=11, fontweight='bold')
     ax.set_xlabel("Segmen Pelanggan", fontsize=10)
     ax.set_ylabel("Jumlah", fontsize=10)
     plt.xticks(rotation=15)
@@ -138,7 +150,7 @@ with col2:
         ax=ax, 
         color='#ff7f0e'
     )
-    ax.set_title(f"Kontribusi Pendapatan ({selected_year}) per Segmen (%)", fontsize=11, fontweight='bold')
+    ax.set_title("Kontribusi Pendapatan per Segmen (%)", fontsize=11, fontweight='bold')
     ax.set_xlabel("Segmen Pelanggan", fontsize=10)
     ax.set_ylabel("Persentase Pendapatan (%)", fontsize=10)
     plt.xticks(rotation=15)
