@@ -10,7 +10,7 @@ st.set_page_config(page_title="Dashboard Analisis Olist E-Commerce", layout="wid
 # Set style seaborn
 sns.set(style="darkgrid")
 
-# Load data utama menggunakan file .gz dan parameter compression='gzip' (Sesuai catatan reviewer)
+# Load data utama
 base_dir = os.path.dirname(os.path.abspath(__file__))
 csv_path = os.path.join(base_dir, "main_data.csv")
 all_df = pd.read_csv(csv_path)
@@ -33,7 +33,7 @@ try:
         min_value=min_date,
         max_value=max_date
     )
-except:
+except Exception:
     start_date, end_date = min_date, max_date
 
 filtered_df = all_df[
@@ -85,13 +85,14 @@ st.subheader("👥 Analisis Segmentasi Pelanggan (RFM) & Kontribusi Pendapatan")
 
 recent_date = all_df['order_purchase_timestamp'].max()
 
-rfm_df = all_df.groupby('customer_id').agg({
+# Menggunakan customer_unique_id agar agregasi RFM akurat
+rfm_df = all_df.groupby('customer_unique_id').agg({
     'order_purchase_timestamp': lambda x: (recent_date - x.max()).days,
     'order_id': 'nunique',
     'payment_value': 'sum'
 }).reset_index()
 
-rfm_df.columns = ['customer_id', 'recency', 'frequency', 'monetary']
+rfm_df.columns = ['customer_unique_id', 'recency', 'frequency', 'monetary']
 
 rfm_df['r_score'] = pd.qcut(rfm_df['recency'], 5, labels=[5, 4, 3, 2, 1], duplicates='drop')
 rfm_df['f_score'] = pd.qcut(rfm_df['frequency'].rank(method='first'), 5, labels=[1, 2, 3, 4, 5])
@@ -109,7 +110,7 @@ def customer_segment(row):
 
 rfm_df['segment'] = rfm_df.apply(customer_segment, axis=1)
 
-trans_segment_filtered = pd.merge(filtered_df, rfm_df[['customer_id', 'segment']], on='customer_id', how='inner')
+trans_segment_filtered = pd.merge(filtered_df, rfm_df[['customer_unique_id', 'segment']], on='customer_unique_id', how='inner')
 
 total_revenue_filtered = trans_segment_filtered['payment_value'].sum()
 revenue_by_segment = trans_segment_filtered.groupby('segment')['payment_value'].sum().reset_index()
