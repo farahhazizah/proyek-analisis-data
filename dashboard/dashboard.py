@@ -12,8 +12,8 @@ sns.set(style="darkgrid")
 
 # Load data utama menggunakan file .gz dan parameter compression='gzip' (Sesuai catatan reviewer)
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csv_path = os.path.join(base_dir, "main_data.csv.gz")
-all_df = pd.read_csv(csv_path, compression='gzip')
+csv_path = os.path.join(base_dir, "main_data.csv")
+all_df = pd.read_csv(csv_path)
 
 # Konversi kolom tanggal ke datetime
 all_df['order_purchase_timestamp'] = pd.to_datetime(all_df['order_purchase_timestamp'])
