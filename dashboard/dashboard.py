@@ -10,20 +10,19 @@ st.set_page_config(page_title="Dashboard Analisis Olist E-Commerce", layout="wid
 # Set style seaborn
 sns.set(style="darkgrid")
 
-# Load data utama (Menggunakan main_data.csv sesuai struktur foldermu)
+# Load data utama langsung dari main_data.csv (Sesuai catatan reviewer)
 base_dir = os.path.dirname(os.path.abspath(__file__))
-csv_path = os.path.join(base_dir, "main_data.csv.gz")
+csv_path = os.path.join(base_dir, "main_data.csv")
 all_df = pd.read_csv(csv_path)
 
 # Konversi kolom tanggal ke datetime
 all_df['order_purchase_timestamp'] = pd.to_datetime(all_df['order_purchase_timestamp'])
 
 # ==========================================
-# SIDEBAR: FILTER INTERAKTIF (Berdasarkan Saran Reviewer)
+# SIDEBAR: FILTER INTERAKTIF
 # ==========================================
 st.sidebar.header("🔍 Filter Dashboard")
 
-# 1. Filter Rentang Tanggal (Date Input)
 min_date = all_df['order_purchase_timestamp'].min().date()
 max_date = all_df['order_purchase_timestamp'].max().date()
 
@@ -37,7 +36,6 @@ try:
 except:
     start_date, end_date = min_date, max_date
 
-# Terapkan filter tanggal ke dataframe utama
 filtered_df = all_df[
     (all_df['order_purchase_timestamp'].dt.date >= start_date) & 
     (all_df['order_purchase_timestamp'].dt.date <= end_date)
@@ -121,7 +119,6 @@ if total_revenue_filtered > 0:
 else:
     revenue_by_segment['percentage'] = 0
 
-# Menampilkan grafik menggunakan 2 kolom di Streamlit
 col1, col2 = st.columns(2)
 
 with col1:
