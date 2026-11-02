@@ -15,7 +15,8 @@ sns.set(style="darkgrid")
 @st.cache_data
 def load_data():
   base_dir = os.path.dirname(os.path.abspath(__file__))
-  csv_path = os.path.join(base_dir, "main_data.csv")
+  # Perbaikan path: naik satu level ke folder root project
+  csv_path = os.path.join(base_dir, "..", "main_data.csv")
   df = pd.read_csv(csv_path)
   df["order_purchase_timestamp"] = pd.to_datetime(df["order_purchase_timestamp"])
   return df
@@ -41,11 +42,9 @@ try:
 except Exception:
   start_date, end_date = min_date, max_date
 
-# Validasi jika rentang tanggal hanya 1 tanggal atau tuple tidak lengkap
+# Validasi rentang tanggal
 if isinstance(start_date, (list, tuple)) and len(start_date) == 2:
   start_date, end_date = start_date
-elif not isinstance(start_date, type(min_date)):
-  start_date, end_date = min_date, max_date
 
 filtered_df = all_df[
     (all_df["order_purchase_timestamp"].dt.date >= start_date)
@@ -108,7 +107,6 @@ st.subheader("👥 Analisis Segmentasi Pelanggan (RFM) & Kontribusi Pendapatan")
 
 recent_date = all_df["order_purchase_timestamp"].max()
 
-# Menggunakan customer_unique_id agar agregasi RFM akurat
 rfm_df = (
     all_df.groupby("customer_unique_id")
     .agg({
