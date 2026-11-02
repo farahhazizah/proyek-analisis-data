@@ -15,8 +15,7 @@ sns.set(style="darkgrid")
 @st.cache_data
 def load_data():
   base_dir = os.path.dirname(os.path.abspath(__file__))
-  # Karena dashboard.py dan main_data.csv berada di dalam folder yang sama (dashboard/)
-  csv_path = os.path.join(base_dir, "main_data.csv")
+  csv_path = os.path.join(base_dir, "main_data.csv.gz")
   df = pd.read_csv(csv_path)
   df["order_purchase_timestamp"] = pd.to_datetime(df["order_purchase_timestamp"])
   return df
