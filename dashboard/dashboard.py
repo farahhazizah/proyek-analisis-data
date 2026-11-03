@@ -15,7 +15,6 @@ sns.set(style="darkgrid")
 @st.cache_data
 def load_data():
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    # Hapus tanda '../' karena file csv ada di folder yang sama!
     csv_path = os.path.join(base_dir, "main_data.csv")  
     
     df = pd.read_csv(csv_path)
@@ -23,6 +22,7 @@ def load_data():
         df["order_purchase_timestamp"]
     )
     return df
+
 all_df = load_data()
 
 # ==========================================
@@ -68,47 +68,56 @@ if filtered_df.empty:
     )
 else:
     # ==========================================
-    # VISUALISASI PERTANYAAN 1: Produk Pendapatan Tertinggi & Terendah
+    # VISUALISASI PERTANYAAN 1: Performa Kategori Produk (Top & Bottom 5)
     # ==========================================
-    st.subheader("🏆 Performa Produk berdasarkan Pendapatan (Top & Bottom)")
+    st.subheader("🏆 Performa Penjualan Berdasarkan Kategori Produk")
 
-    if (
-        "product_id" in filtered_df.columns
-        and "payment_value" in filtered_df.columns
-    ):
-        product_revenue = (
-            filtered_df.groupby("product_id")["payment_value"]
-            .sum()
+    if "product_category_name" in filtered_df.columns and "price" in filtered_df.columns:
+        category_perf = (
+            filtered_df.groupby("product_category_name")
+            .agg({"price": "sum", "order_id": "nunique"})
             .reset_index()
         )
-        product_revenue = product_revenue.sort_values(
-            by="payment_value", ascending=False
-        )
+        category_perf.columns = ["product_category_name", "total_revenue", "total_orders"]
+        
+        top_5 = category_perf.sort_values(by="total_revenue", ascending=False).head(5)
+        bottom_5 = category_perf.sort_values(by="total_revenue", ascending=True).head(5)
 
-        top_products = product_revenue.head(5)
-        bottom_products = product_revenue.tail(5)
-        top_bottom_products = pd.concat([top_products, bottom_products]).drop_duplicates()
+        # Buat visualisasi subplot (Top & Bottom 5 berdampingan seperti di notebook)
+        fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(18, 6))
 
-        top_bottom_products["short_product_id"] = (
-            top_bottom_products["product_id"].str[:8] + "..."
-        )
-
-        fig_cat, ax_cat = plt.subplots(figsize=(12, 5))
+        # Grafik Top 5 Kategori
         sns.barplot(
-            x="payment_value",
-            y="short_product_id",
-            data=top_bottom_products,
-            color="#1f77b4",
-            ax=ax_cat,
+            x="total_revenue",
+            y="product_category_name",
+            data=top_5,
+            palette="Blues_r",
+            ax=ax[0],
+            hue="product_category_name",
+            legend=False,
         )
-        ax_cat.set_title(
-            "Produk dengan Total Pendapatan Tertinggi & Terendah",
-            fontsize=12,
-            fontweight="bold",
+        ax[0].set_ylabel(None)
+        ax[0].set_xlabel("Total Revenue (R$)", fontsize=12)
+        ax[0].set_title("Top 5 Best Performing Product Categories", fontsize=14, fontweight="bold")
+
+        # Grafik Bottom 5 Kategori
+        sns.barplot(
+            x="total_revenue",
+            y="product_category_name",
+            data=bottom_5,
+            palette="Blues_r",
+            ax=ax[1],
+            hue="product_category_name",
+            legend=False,
         )
-        ax_cat.set_xlabel("Total Pendapatan (Payment Value)", fontsize=10)
-        ax_cat.set_ylabel("ID Produk", fontsize=10)
-        st.pyplot(fig_cat)
+        ax[1].set_ylabel(None)
+        ax[1].set_xlabel("Total Revenue (R$)", fontsize=12)
+        ax[1].set_title("Bottom 5 Worst Performing Product Categories", fontsize=14, fontweight="bold")
+        ax[1].yaxis.set_label_position("right")
+        ax[1].yaxis.tick_right()
+
+        plt.suptitle("Performa Penjualan Berdasarkan Kategori Produk", fontsize=16, fontweight="bold", y=1.05)
+        st.pyplot(fig)
 
     st.markdown("---")
 
@@ -145,7 +154,6 @@ else:
     rfm_df["f_score"] = rfm_df["f_score"].astype(int)
     rfm_df["m_score"] = rfm_df["m_score"].astype(int)
 
-
     def customer_segment(row):
         if row["r_score"] >= 4 and row["f_score"] >= 4 and row["m_score"] >= 4:
             return "Best Customers"
@@ -155,7 +163,6 @@ else:
             return "At Risk Customers"
         else:
             return "Potential Loyalist"
-
 
     rfm_df["segment"] = rfm_df.apply(customer_segment, axis=1)
 
