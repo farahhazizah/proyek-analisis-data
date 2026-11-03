@@ -15,14 +15,14 @@ sns.set(style="darkgrid")
 @st.cache_data
 def load_data():
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    # Naik satu level ke root directory, lalu cari main_data.csv
-    csv_path = os.path.join(base_dir, "../main_data.csv")
+    # Hapus tanda '../' karena file csv ada di folder yang sama!
+    csv_path = os.path.join(base_dir, "main_data.csv")  
+    
     df = pd.read_csv(csv_path)
     df["order_purchase_timestamp"] = pd.to_datetime(
         df["order_purchase_timestamp"]
     )
     return df
-
 all_df = load_data()
 
 # ==========================================
